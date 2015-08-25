@@ -20,14 +20,20 @@ RUN export LANGUAGE=en_US.UTF-8 && \
 # install nginx
 RUN apt-get update; apt-get install -y nginx-extras
 
+# install php
+RUN apt-get update; apt-get install -y php5-fpm
+
 # supervisor config
-ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY ./config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # nginx config
-ADD ./sites-enabled /etc/nginx/sites-enabled/
-
-# copy www data
-COPY www /var/www
+RUN mkdir -p /var/www/mail-auth
+COPY ./config/nginx-mail-auth.php /var/www/mail-auth/auth.php
+COPY ./config/ssl/ /etc/ssl/certs/
+COPY ./config/ca-ssl/ /etc/ssl/auth/
+COPY ./config/sites-enabled /etc/nginx/sites-enabled/
+RUN rm -v /etc/nginx/nginx.conf
+COPY ./config/nginx.conf /etc/nginx/nginx.conf
 
 WORKDIR /etc/nginx
 
