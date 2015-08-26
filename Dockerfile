@@ -1,30 +1,40 @@
-FROM        debian:sid
+FROM        gentoo-amd64-paludis:latest
 MAINTAINER  Julian Ospald "hasufell@posteo.de"
 
-ENV DEBIAN_FRONTEND noninteractive
+# set USE flags
+# check these with "cave show <package-name>"
+RUN echo -e "*/* acl bash-completion ipv6 kmod openrc pcre readline unicode\
+	zlib pam ssl sasl bzip2 urandom crypt tcpd\
+	-acpi -cairo -consolekit -cups -dbus -dri -gnome -gnutls -gtk -ogg -opengl\
+	-pdf -policykit -qt3support -qt5 -qt4 -sdl -sound -systemd -truetype -vim\
+	-vim-syntax -wayland -X\
+	\n\
+	\ndev-lang/php cgi cli curl fpm gmp imap zip\
+	\napp-eselect/eselect-php fpm\
+	\n\
+	\n*/* NGINX_MODULES_HTTP: access auth_basic auth_pam auth_request browser\
+	charset dav dav_ext fastcgi gunzip map memcached perl proxy realip referer\
+	rewrite scgi\
+	\n\
+	\n*/* NGINX_MODULES_MAIL: imap pop3 smtp" >> /etc/paludis/use.conf
 
-# Update the package repository and pull basic packages
-RUN apt-get update && \
-	apt-get upgrade -y && \
-	apt-get install -y wget curl locales nano dnsutils net-tools vim git htop supervisor
-
-# Configure timezone and locale
-RUN echo "Europe/Berlin" > /etc/timezone && \
-	dpkg-reconfigure -f noninteractive tzdata
-RUN export LANGUAGE=en_US.UTF-8 && \
-	export LANG=en_US.UTF-8 && \
-	export LC_ALL=en_US.UTF-8 && \
-	locale-gen en_US.UTF-8 && \
-	dpkg-reconfigure locales
+# update world with our USE flags
+RUN chgrp paludisbuild /dev/tty && cave resolve -c world -x
 
 # install nginx
-RUN apt-get update; apt-get install -y nginx-extras
+RUN chgrp paludisbuild /dev/tty && cave resolve -z www-servers/nginx -x
 
 # install php
-RUN apt-get update; apt-get install -y php5-fpm
+RUN chgrp paludisbuild /dev/tty && cave resolve -z dev-lang/php -x
+
+# install tools
+RUN chgrp paludisbuild /dev/tty && cave resolve -z app-admin/supervisor sys-process/htop -x
+
+# update etc files... hope this doesn't screw up
+RUN etc-update --automode -5
 
 # supervisor config
-COPY ./config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY ./config/supervisord.conf /etc/supervisord.conf
 
 # nginx config
 RUN mkdir -p /var/www/mail-auth
