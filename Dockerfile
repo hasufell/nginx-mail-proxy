@@ -1,4 +1,4 @@
-FROM        gentoo-amd64-paludis:latest
+FROM        hasufell/gentoo-amd64-paludis:latest
 MAINTAINER  Julian Ospald "hasufell@posteo.de"
 
 # set USE flags
